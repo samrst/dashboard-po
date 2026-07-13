@@ -1,0 +1,449 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard SENAI BA - Gestão de Avaliações Objetivas</title>
+
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link rel="icon" type="image/png" href="IMG/saep-icon.png">
+
+    <link href="https://fonts.googleapis.com/css2?family=Barlow:wght@400;500;600;700&family=Barlow+Condensed:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+    <link rel="stylesheet" href="CSS/style.css">
+</head>
+<body>
+
+<div id="loading-overlay">
+    <div class="spinner"></div>
+    <p>Aguardando planilha...</p>
+    <input type="file" id="file-input" accept=".xlsx,.xls" style="display: none;">
+    <button class="btn-import" onclick="document.getElementById('file-input').click()">Importar Planilha</button>
+</div>
+
+<header>
+
+    <nav>
+        <img src="./IMG/logo-senai.png" width="100" alt="Logo Senai">
+
+        <h2 class="logo">SENAI | SAEP</h2>
+
+        <div class="nav-actions">
+
+            <button
+                class="btn-header-update"
+                id="btn-export">
+                Exportar Relatório
+            </button>
+
+            <button
+                class="btn-header-update"
+                onclick="document.getElementById('file-input').click()">
+                Atualizar Dados
+            </button>
+
+        </div>
+    </nav>
+
+    <section class="hero">
+        <p class="hero-eyebrow">Plataforma Interna</p>
+
+        <h1>Gestão de Avaliações Objetivas</h1>
+
+        <p>
+            SENAI Bahia — Dashboard Unificado
+        </p>
+    </section>
+
+</header>
+
+<main class="container" id="main-content">
+    <!-- Filtros -->
+    <section class="filters-panel">
+        <div class="filter-group"><label>Unidade</label><select id="filter-unidade"><option value="ALL">Todas</option></select></div>
+        <div class="filter-group"><label>Curso</label><select id="filter-curso"><option value="ALL">Todos</option></select></div>
+        <div class="filter-group"><label>Modalidade</label><select id="filter-modalidade"><option value="ALL">Todas</option></select></div>
+    </section>
+
+  <!-- KPIs -->
+<section class="kpi-section">
+
+    <div class="kpi-row">
+
+        <!-- 1 -->
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <span class="kpi-label">Total de Alunos</span>
+            </div>
+            <div class="kpi-value" id="kpi-objetivo">0</div>
+            <div class="kpi-sub">Número de alunos inscritos na Avaliação Objetiva</div>
+        </div>
+
+        <!-- 2 -->
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <span class="kpi-label">Alunos Aptos</span>
+                <span class="kpi-badge" id="kpi-homologados-pct">0%</span>
+            </div>
+            <div class="kpi-value" id="kpi-homologados">0</div>
+            <div class="kpi-sub">Em relação ao total de alunos</div>
+        </div>
+
+        <!-- 3 -->
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <span class="kpi-label">Alunos Inaptos</span>
+                <span class="kpi-badge" id="kpi-total-pct">0%</span>
+            </div>
+            <div class="kpi-value" id="kpi-total">0</div>
+            <div class="kpi-sub">Em relação ao total de alunos</div>
+        </div>
+
+        <!-- 4 -->
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <span class="kpi-label">Alunos Agendados</span>
+                <span class="kpi-badge" id="kpi-aplicadas-pct">0%</span>
+            </div>
+            <div class="kpi-value" id="kpi-aplicadas">0</div>
+            <div class="kpi-sub">Em relação aos alunos aptos</div>
+        </div>
+
+        <!-- 5 -->
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <span class="kpi-label">Alunos Não Agendados</span>
+                <span class="kpi-badge" id="kpi-feitas-pct">0%</span>
+            </div>
+            <div class="kpi-value" id="kpi-feitas">0</div>
+            <div class="kpi-sub">Em relação aos alunos aptos</div>
+        </div>
+
+        <!-- 6 -->
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <span class="kpi-label">Presentes</span>
+                <span class="kpi-badge" id="kpi-pendentes-pct">0%</span>
+            </div>
+            <div class="kpi-value" id="kpi-pendentes">0</div>
+            <div class="kpi-sub">Em relação aos agendados</div>
+        </div>
+
+        <!-- 7 -->
+        <div class="kpi-card">
+            <div class="kpi-header">
+                <span class="kpi-label">Ausentes</span>
+                <span class="kpi-badge" id="kpi-confirmadas-pct">0%</span>
+            </div>
+            <div class="kpi-value" id="kpi-confirmadas">0</div>
+            <div class="kpi-sub">Em relação aos agendados</div>
+        </div>
+
+    </div>
+
+</section>
+
+    <!-- Gráficos de Volume -->
+    <h2 class="section-divider">1. Volume de Alunos e Aptos</h2>
+    <section class="charts-grid">
+        <div class="card">
+            <h3 class="card-title">Alunos por Escola</h3>
+            <div style="height: 350px;"><canvas id="chart-alunos-escola"></canvas></div>
+        </div>
+        <div class="card">
+            <h3 class="card-title">Aptos vs Agendados por Curso</h3>
+            <div class="scrollspy-viewport" id="chart-homologacao-viewport">
+                <div class="scrollspy-inner" id="chart-homologacao-wrapper">
+                    <canvas id="chart-homologacao"></canvas>
+                </div>
+                <div class="scrollspy-indicator" id="chart-homologacao-indicator">0 itens</div>
+                <button type="button" class="scrollspy-top" id="chart-homologacao-top" title="Voltar ao topo" aria-label="Voltar ao topo">↑</button>
+            </div>
+            <p class="chart-hint" id="chart-homologacao-hint"></p>
+        </div>
+    </section>
+
+    <!-- Gráficos de Aplicação -->
+    <h2 class="section-divider">2. Status de Agendamento</h2>
+    <section class="charts-grid">
+        <div class="card">
+            <h3 class="card-title">Agendados vs Não Agendados</h3>
+            <div style="height: 350px;"><canvas id="chart-aplicacao"></canvas></div>
+        </div>
+        <div class="card">
+            <h3 class="card-title">Visão Geral de Agendamento</h3>
+            <div style="height: 350px;"><canvas id="chart-aplicacao-pizza"></canvas></div>
+        </div>
+    </section>
+
+    <!-- Gráficos de Presença -->
+    <h2 class="section-divider">3. Presença na Avaliação Objetiva</h2>
+    <section class="charts-grid">
+        <div class="card">
+            <h3 class="card-title">Presentes vs Ausentes por Curso</h3>
+            <div style="height: 350px;"><canvas id="chart-tabulacao"></canvas></div>
+        </div>
+        <div class="card">
+            <h3 class="card-title">Eficiência de Presença</h3>
+            <div style="height: 350px;"><canvas id="chart-tabulacao-pizza"></canvas></div>
+        </div>
+    </section>
+
+    <h2 class="section-divider">4. Índices de Participação na Avaliação Objetiva</h2>
+    <section class="charts-grid">
+        <div class="card">
+            <h3 class="card-title">
+                Participação na Avaliação Objetiva (% dos Aptos)
+            </h3>
+            <div style="height: 350px;"><canvas id="chart-percentual-pratica"></canvas></div>
+        </div>
+        <div class="card">
+            <h3 class="card-title">Percentual de Agendamento por Curso</h3>
+            <div class="scrollspy-viewport" id="chart-confirmacao-viewport">
+                <div class="scrollspy-inner" id="chart-confirmacao-wrapper">
+                    <canvas id="chart-confirmacao"></canvas>
+                </div>
+                <div class="scrollspy-indicator" id="chart-confirmacao-indicator">0 itens</div>
+                <button type="button" class="scrollspy-top" id="chart-confirmacao-top" title="Voltar ao topo" aria-label="Voltar ao topo">↑</button>
+            </div>
+            <p class="chart-hint" id="chart-confirmacao-hint"></p>
+        </div>
+    
+    </section>
+
+
+    <!-- Tabela -->
+    <section class="card">
+        <h3 class="card-title">Detalhamento Geral</h3>
+        <div class="scrollspy-viewport is-scrollable scrollspy-table" id="table-viewport">
+            <div class="scrollspy-inner table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Unidade</th>
+                            <th>Curso</th>
+                            <th>Alunos</th>
+                            <th>Aptos</th>
+                            <th>Inaptos</th>
+                            <th>Agendados</th>
+                            <th>Não Agend.</th>
+                            <th>Presentes</th>
+                            <th>Ausentes</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+            <div class="scrollspy-indicator" id="table-indicator">0 linhas</div>
+            <button type="button" class="scrollspy-top" id="table-top" title="Voltar ao topo" aria-label="Voltar ao topo">↑</button>
+        </div>
+        <p class="chart-hint" id="table-hint"></p>
+    </section>
+</main>
+
+    <footer>
+        <p>© 2026 SENAI — Uso Interno Restrito</p>
+    </footer>
+
+    <div class="modal-overlay" id="modal-export">
+
+        <div class="modal">
+
+            <div class="modal-header">
+
+                <h2>Exportar Relatório</h2>
+
+                <button
+                    class="modal-close"
+                    id="fechar-modal">
+
+                    ×
+
+                </button>
+
+            </div>
+
+            <div class="modal-body">
+
+                <div class="export-section">
+
+                    <h3>Formato</h3>
+
+                    <label class="export-option">
+                        <input type="radio" name="tipo" checked>
+                        PDF
+                    </label>
+
+                    <label class="export-option">
+                        <input type="radio" name="tipo">
+                        Word
+                    </label>
+
+                </div>
+
+                <div class="export-section">
+
+                    <h3>KPIs</h3>
+
+                    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                        <button type="button" class="btn-secondary" id="btn-select-all-kpis" style="flex: 1; padding: 8px; font-size: 12px;">Selecionar Todos</button>
+                        <button type="button" class="btn-secondary" id="btn-clear-kpis" style="flex: 1; padding: 8px; font-size: 12px;">Limpar</button>
+                    </div>
+
+                    <label class="export-option">
+                        <input type="checkbox" value="kpi-objetivo" checked>
+                        Total de Alunos
+                    </label>
+
+                    <label class="export-option">
+                        <input type="checkbox" value="kpi-homologados" checked>
+                        Alunos Aptos
+                    </label>
+
+                    <label class="export-option">
+                        <input type="checkbox" value="kpi-total" checked>
+                        Alunos Inaptos
+                    </label>
+
+                    <label class="export-option">
+                        <input type="checkbox" value="kpi-aplicadas" checked>
+                        Alunos Agendados
+                    </label>
+
+                    <label class="export-option">
+                        <input type="checkbox" value="kpi-feitas" checked>
+                        Alunos Não Agendados
+                    </label>
+
+                    <label class="export-option">
+                        <input type="checkbox" value="kpi-pendentes" checked>
+                        Presentes
+                    </label>
+
+                    <label class="export-option">
+                        <input type="checkbox" value="kpi-confirmadas" checked>
+                        Ausentes
+                    </label>
+
+                </div>
+
+                <div class="export-section">
+
+                    <h3>Gráficos</h3>
+
+                    <div style="display: flex; gap: 8px; margin-bottom: 12px;">
+                        <button type="button" class="btn-secondary" id="btn-select-all-charts" style="flex: 1; padding: 8px; font-size: 12px;">Selecionar Todos</button>
+                        <button type="button" class="btn-secondary" id="btn-clear-charts" style="flex: 1; padding: 8px; font-size: 12px;">Limpar</button>
+                    </div>
+
+                    <label class="export-option">
+                        <input
+                            type="checkbox"
+                            value="chart-alunos-escola"
+                            checked>
+
+                        Alunos por Escola
+                    </label>
+
+                    <label class="export-option">
+                        <input
+                            type="checkbox"
+                            value="chart-homologacao">
+
+                        Aptos x Agendados
+                    </label>
+
+                    <label class="export-option">
+                        <input
+                            type="checkbox"
+                            value="chart-aplicacao">
+
+                        Agendamentos
+                    </label>
+
+                    <label class="export-option">
+                        <input
+                            type="checkbox"
+                            value="chart-aplicacao-pizza">
+
+                        Visão Geral de Agendamento
+                    </label>
+
+                    <label class="export-option">
+                        <input
+                            type="checkbox"
+                            value="chart-tabulacao">
+
+                        Presença
+                    </label>
+
+                    <label class="export-option">
+                        <input
+                            type="checkbox"
+                            value="chart-tabulacao-pizza">
+
+                        Eficiência de Presença
+                    </label>
+
+                    <label class="export-option">
+                        <input
+                            type="checkbox"
+                            value="chart-percentual-pratica">
+
+                        Participação Objetiva
+                    </label>
+
+                    <label class="export-option">
+                        <input
+                            type="checkbox"
+                            value="chart-confirmacao">
+
+                        Agendamento por Curso
+                    </label>
+
+                </div>
+
+                <div class="export-observacoes-box">
+                    <label>Observações</label>
+                    <textarea id="export-observacoes" rows="4" placeholder="Digite observações ou análises do relatório..."></textarea>
+                </div>
+
+
+            </div>
+
+            <div class="modal-footer">
+
+                <button
+                    class="btn-secondary"
+                    id="cancelar-export">
+
+                    Cancelar
+
+                </button>
+
+                <button
+                    class="btn-primary"
+                    id="confirmar-export">
+
+                    Exportar
+
+                </button>
+
+            </div>
+
+        </div>
+
+    </div>
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-annotation"></script>
+<script src="https://cdn.sheetjs.com/xlsx-0.20.0/package/dist/xlsx.full.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+<script src="https://unpkg.com/docx@8.5.0/build/index.umd.js"></script>
+
+<script src="JS/script.js"></script>
+<script src="JS/export.js"></script>
+</body>
+</html>
