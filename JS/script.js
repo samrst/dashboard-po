@@ -46,7 +46,11 @@ function handleFile(e) {
             }
 
             const normalizeKey = value => String(value ?? '')
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '')
                 .replace(/\u00A0/g, ' ')
+                .replace(/[\r\n]+/g, ' ')
+                .replace(/\s*\/\s*/g, '/')
                 .replace(/\s+/g, ' ')
                 .trim()
                 .toLowerCase();
@@ -78,8 +82,26 @@ function handleFile(e) {
                 modalidade: findCol(['Modalidade']),
                 categoria: findCol(['Categoria']),
                 alunos: findCol(['Alunos', 'Total de Alunos', 'Total Alunos']),
-                aptos: findCol(['Alunos Aptos/Agendados', 'Aptos/Agendados']),
-                inaptos: findCol(['Alunos Inaptos/Não Agendados', 'Inaptos/Não Agendados', 'Alunos Inaptos/Nao Agendados', 'Inaptos/Nao Agendados']),
+                aptos: findCol([
+                    'Alunos Aptos/Agendados',
+                    'Alunos Aptos / Agendados',
+                    'Aptos/Agendados',
+                    'Aptos / Agendados',
+                    'Alunos Aptos',
+                    'Aptos'
+                ]),
+                inaptos: findCol([
+                    'Alunos Inaptos/Não Agendados',
+                    'Alunos Inaptos / Não Agendados',
+                    'Alunos Inaptos/Nao Agendados',
+                    'Alunos Inaptos / Nao Agendados',
+                    'Inaptos/Não Agendados',
+                    'Inaptos / Não Agendados',
+                    'Inaptos/Nao Agendados',
+                    'Inaptos / Nao Agendados',
+                    'Alunos Inaptos',
+                    'Inaptos'
+                ]),
                 presentes: findCol(['Presentes', 'Presente']),
                 ausentes: findCol(['Ausentes', 'Ausente'])
             };

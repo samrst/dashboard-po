@@ -9,22 +9,51 @@ def process_excel(file_path, output_json='data.json'):
         df = pd.read_excel(file_path, sheet_name='Worksheet', header=1)
         
         # --- 1. SEPARAÇÃO DE MÉTRICAS ---
-        # Mapeamento direto das colunas da planilha modelo (com suporte a normalização e fallbacks)
+        import unicodedata
+        import re
+
+        def normalize_key(val):
+            s = str(val or '')
+            s = unicodedata.normalize('NFD', s)
+            s = re.sub(r'[\u0300-\u036f]', '', s)
+            s = s.replace('\u00A0', ' ')
+            s = re.sub(r'[\r\n]+', ' ', s)
+            s = re.sub(r'\s*/\s*', '/', s)
+            s = re.sub(r'\s+', ' ', s)
+            return s.strip().lower()
+
         def find_col(candidates):
             for c in candidates:
                 if c in df.columns:
                     return c
-            # Case/whitespace insensitive fallback
-            cols_norm = {str(col).strip().lower(): col for col in df.columns}
+            cols_norm = {normalize_key(col): col for col in df.columns}
             for c in candidates:
-                n = str(c).strip().lower()
+                n = normalize_key(c)
                 if n in cols_norm:
                     return cols_norm[n]
             return None
 
         col_alunos = find_col(['Alunos', 'Total de Alunos', 'Total Alunos'])
-        col_aptos = find_col(['Alunos Aptos/Agendados', 'Aptos/Agendados'])
-        col_inaptos = find_col(['Alunos Inaptos/Não Agendados', 'Inaptos/Não Agendados', 'Alunos Inaptos/Nao Agendados', 'Inaptos/Nao Agendados'])
+        col_aptos = find_col([
+            'Alunos Aptos/Agendados',
+            'Alunos Aptos / Agendados',
+            'Aptos/Agendados',
+            'Aptos / Agendados',
+            'Alunos Aptos',
+            'Aptos'
+        ])
+        col_inaptos = find_col([
+            'Alunos Inaptos/Não Agendados',
+            'Alunos Inaptos / Não Agendados',
+            'Alunos Inaptos/Nao Agendados',
+            'Alunos Inaptos / Nao Agendados',
+            'Inaptos/Não Agendados',
+            'Inaptos / Não Agendados',
+            'Inaptos/Nao Agendados',
+            'Inaptos / Nao Agendados',
+            'Alunos Inaptos',
+            'Inaptos'
+        ])
         col_presentes = find_col(['Presentes', 'Presente'])
         col_ausentes = find_col(['Ausentes', 'Ausente'])
 
