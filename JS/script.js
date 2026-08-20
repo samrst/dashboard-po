@@ -1,7 +1,7 @@
 let rawData = [], filteredData = [], charts = {};
 const $ = id => document.getElementById(id);
-const filters = ['unidade', 'curso', 'modalidade'];
-const keysMap = { unidade: 'Unidade operacional (Escola)', curso: 'Curso', modalidade: 'Modalidade' };
+const filters = ['unidade', 'curso', 'modalidade', 'categoria'];
+const keysMap = { unidade: 'Unidade operacional (Escola)', curso: 'Curso', modalidade: 'Modalidade', categoria: 'Categoria' };
 
 // Event Listeners
 if ($('file-input')) $('file-input').onchange = handleFile;
@@ -28,8 +28,7 @@ function handleFile(e) {
             const sheetName = workbook.SheetNames.find(n => n.includes('Worksheet')) || workbook.SheetNames[0];
             const sheet = workbook.Sheets[sheetName];
 
-            // Abordagem robusta: ler como array de arrays (header: 1), pular linha de título,
-            // e construir os objetos manualmente mapeando pelos cabeçalhos
+            // Ler como array de arrays (header: 1)
             const allRows = XLSX.utils.sheet_to_json(sheet, { header: 1 });
 
             // Encontrar a linha de cabeçalhos (contém "Unidade operacional (Escola)")
@@ -46,32 +45,66 @@ function handleFile(e) {
                 throw new Error('Não foi possível encontrar a linha de cabeçalhos na planilha. Verifique se a planilha contém a coluna "Unidade operacional (Escola)".');
             }
 
+            const normalizeKey = value => String(value ?? '')
+                .replace(/\u00A0/g, ' ')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .toLowerCase();
+
             const headers = allRows[headerRowIdx];
             const colIndex = {};
+            const normColIndex = {};
             headers.forEach((h, i) => {
-                if (h != null) colIndex[String(h).trim()] = i;
+                if (h != null) {
+                    const rawStr = String(h).trim();
+                    colIndex[rawStr] = i;
+                    normColIndex[normalizeKey(h)] = i;
+                }
             });
 
-            // Mapeamento dos índices das colunas que precisamos
-            const idx = {
-                unidade: colIndex['Unidade operacional (Escola)'],
-                curso: colIndex['Curso'],
-                modalidade: colIndex['Modalidade'],
-                alunos: colIndex['Alunos'] ?? colIndex['Alunos '],
-                aptos: colIndex['Alunos Aptos'],
-                inaptos: colIndex['Alunos Inaptos'],
-                agendados: colIndex['Alunos Agendados'],
-                naoAgendados: colIndex['Alunos Não Agendados'],
-                presentes: colIndex['Presentes'],
-                ausentes: colIndex['Ausentes']
+            const findCol = candidates => {
+                for (const c of candidates) {
+                    if (colIndex[c] !== undefined) return colIndex[c];
+                    const n = normalizeKey(c);
+                    if (normColIndex[n] !== undefined) return normColIndex[n];
+                }
+                return undefined;
             };
 
-            // Validar que temos pelo menos a coluna de unidade
-            if (idx.unidade === undefined) {
-                throw new Error('Coluna "Unidade operacional (Escola)" não encontrada na planilha.');
+            // Mapeamento dos índices das colunas oficiais
+            const idx = {
+                unidade: findCol(['Unidade operacional (Escola)', 'Unidade operacional', 'Unidade', 'Escola']),
+                curso: findCol(['Curso', 'Nome do Curso']),
+                modalidade: findCol(['Modalidade']),
+                categoria: findCol(['Categoria']),
+                alunos: findCol(['Alunos', 'Total de Alunos', 'Total Alunos']),
+                aptos: findCol(['Alunos Aptos/Agendados', 'Aptos/Agendados']),
+                inaptos: findCol(['Alunos Inaptos/Não Agendados', 'Inaptos/Não Agendados', 'Alunos Inaptos/Nao Agendados', 'Inaptos/Nao Agendados']),
+                presentes: findCol(['Presentes', 'Presente']),
+                ausentes: findCol(['Ausentes', 'Ausente'])
+            };
+
+            // Validar colunas obrigatórias
+            const missingCols = [];
+            if (idx.unidade === undefined) missingCols.push('Unidade operacional (Escola)');
+            if (idx.aptos === undefined) missingCols.push('Alunos Aptos/Agendados');
+            if (idx.inaptos === undefined) missingCols.push('Alunos Inaptos/Não Agendados');
+
+            if (missingCols.length > 0) {
+                throw new Error(`Não foi possível processar a planilha.\n\nColuna(s) obrigatória(s) não encontrada(s):\n- ${missingCols.join('\n- ')}`);
             }
 
-            // Processar as linhas de dados (pular título e cabeçalhos)
+            const parseCellNum = value => {
+                if (value === null || value === undefined) return 0;
+                if (typeof value === 'number') return Math.round(value) || 0;
+                const text = String(value).trim();
+                if (text === '' || text === '-' || text.startsWith('#')) return 0;
+                const normalized = text.replace(/\./g, '').replace(',', '.');
+                const num = parseInt(normalized, 10);
+                return Number.isFinite(num) ? num : 0;
+            };
+
+            // Processar as linhas de dados (pular cabeçalhos)
             rawData = [];
             for (let i = headerRowIdx + 1; i < allRows.length; i++) {
                 const row = allRows[i];
@@ -82,15 +115,14 @@ function handleFile(e) {
 
                 rawData.push({
                     'Unidade operacional (Escola)': unidade,
-                    'Curso': row[idx.curso] || '-',
-                    'Modalidade': row[idx.modalidade] || '-',
-                    '_total_alunos': parseInt(row[idx.alunos]) || 0,
-                    '_alunos_aptos': parseInt(row[idx.aptos]) || 0,
-                    '_alunos_inaptos': parseInt(row[idx.inaptos]) || 0,
-                    '_agendados': parseInt(row[idx.agendados]) || 0,
-                    '_nao_agendados': parseInt(row[idx.naoAgendados]) || 0,
-                    '_presentes': parseInt(row[idx.presentes]) || 0,
-                    '_ausentes': parseInt(row[idx.ausentes]) || 0
+                    'Curso': (idx.curso !== undefined && row[idx.curso] != null) ? String(row[idx.curso]).trim() : '-',
+                    'Modalidade': (idx.modalidade !== undefined && row[idx.modalidade] != null) ? String(row[idx.modalidade]).trim() : '-',
+                    'Categoria': (idx.categoria !== undefined && row[idx.categoria] != null && String(row[idx.categoria]).trim() !== '') ? String(row[idx.categoria]).trim() : '-',
+                    '_total_alunos': parseCellNum(row[idx.alunos]),
+                    '_alunos_aptos': parseCellNum(row[idx.aptos]),
+                    '_alunos_inaptos': parseCellNum(row[idx.inaptos]),
+                    '_presentes': parseCellNum(row[idx.presentes]),
+                    '_ausentes': parseCellNum(row[idx.ausentes])
                 });
             }
 
@@ -137,8 +169,6 @@ function updateKPIs() {
         objetivo: '_total_alunos',
         homologados: '_alunos_aptos',
         total: '_alunos_inaptos',
-        aplicadas: '_agendados',
-        feitas: '_nao_agendados',
         pendentes: '_presentes',
         confirmadas: '_ausentes'
     };
@@ -149,10 +179,8 @@ function updateKPIs() {
     const pcts = {
         'homologados-pct': [vals.homologados, vals.objetivo, 'dos Alunos'],
         'total-pct': [vals.total, vals.objetivo, 'dos Alunos'],
-        'aplicadas-pct': [vals.aplicadas, vals.homologados, 'dos Aptos'],
-        'feitas-pct': [vals.feitas, vals.homologados, 'dos Aptos'],
-        'pendentes-pct': [vals.pendentes, vals.aplicadas, 'dos Agendados'],
-        'confirmadas-pct': [vals.confirmadas, vals.aplicadas, 'dos Agendados']
+        'pendentes-pct': [vals.pendentes, vals.homologados, 'dos Aptos/Agendados'],
+        'confirmadas-pct': [vals.confirmadas, vals.homologados, 'dos Aptos/Agendados']
     };
     Object.entries(pcts).forEach(([id, [v, total, msg]]) => {
         if ($(`kpi-${id}`)) $(`kpi-${id}`).textContent = (total ? Math.round(v / total * 100) : 0) + '% ' + msg;
@@ -176,83 +204,74 @@ function updateCharts() {
     const dAlunos = aggregate(isAll ? keysMap.unidade : keysMap.curso, ['_total_alunos', '_alunos_aptos']);
     renderBar('chart-alunos-escola', Object.keys(dAlunos), [
         { label: 'Total de Alunos', data: Object.values(dAlunos).map(v => v._total_alunos), color: '#005599' },
-        { label: 'Alunos Aptos', data: Object.values(dAlunos).map(v => v._alunos_aptos), color: '#94a3b8' }
+        { label: 'Alunos Aptos/Agendados', data: Object.values(dAlunos).map(v => v._alunos_aptos), color: '#94a3b8' }
     ], 'x', true);
 
-    // 2. Aptos vs Agendados por Curso
-    const dHom = aggregate(keysMap.curso, ['_alunos_aptos', '_agendados']);
-    const sortedHom = Object.entries(dHom).sort((a, b) => b[1]._alunos_aptos - a[1]._alunos_aptos);
-    const labels = sortedHom.map(e => e[0]), isH = labels.length > 8;
-
-    const vp = $('chart-homologacao-viewport'), wr = $('chart-homologacao-wrapper');
-    if (vp && wr) {
-        vp.classList.toggle('is-scrollable', isH);
-        wr.style.height = isH ? (labels.length * 30 + 40) + 'px' : '350px';
-        if ($('chart-homologacao-hint')) $('chart-homologacao-hint').textContent = isH ? `${labels.length} cursos — role.` : '';
-    }
-    renderBar('chart-homologacao', labels, [
-        { label: 'Alunos Aptos', data: sortedHom.map(e => e[1]._alunos_aptos), color: '#003366' },
-        { label: 'Agendados', data: sortedHom.map(e => e[1]._agendados), color: '#00aaff' }
-    ], isH ? 'y' : 'x');
-    if (isH) setupScrollspy(vp, wr, $('chart-homologacao-indicator'), $('chart-homologacao-top'), labels.length, 30);
-
-    // 3 & 4. Agendados vs Não Agendados
-    const dApp = aggregate(isAll ? keysMap.unidade : keysMap.curso, ['_agendados', '_nao_agendados']);
+    // 2 & 3. Aptos/Agendados vs Inaptos/Não Agendados (Seção 2)
+    const dApp = aggregate(isAll ? keysMap.unidade : keysMap.curso, ['_alunos_aptos', '_alunos_inaptos']);
     renderBar('chart-aplicacao', Object.keys(dApp), [
-        { label: 'Agendados', data: Object.values(dApp).map(v => v._agendados), color: '#005599' },
-        { label: 'Não Agendados', data: Object.values(dApp).map(v => v._nao_agendados), color: '#94a3b8' }
+        { label: 'Aptos/Agendados', data: Object.values(dApp).map(v => v._alunos_aptos), color: '#005599' },
+        { label: 'Inaptos/Não Agendados', data: Object.values(dApp).map(v => v._alunos_inaptos), color: '#94a3b8' }
     ], 'x', true);
 
-    // 5 & 6. Presentes vs Ausentes
+    const sumMetric = m => filteredData.reduce((a, b) => a + (Number(b[m]) || 0), 0);
+    renderPie('chart-aplicacao-pizza', ['Aptos/Agendados', 'Inaptos/Não Agendados'], [sumMetric('_alunos_aptos'), sumMetric('_alunos_inaptos')], ['#005599', '#94a3b8']);
+
+    // 4 & 5. Presentes vs Ausentes (Seção 3)
     const dTab = aggregate(keysMap.curso, ['_presentes', '_ausentes']);
     renderBar('chart-tabulacao', Object.keys(dTab).map(k => k.slice(0, 28)), [
         { label: 'Presentes', data: Object.values(dTab).map(v => v._presentes), color: '#003DA5' },
         { label: 'Ausentes', data: Object.values(dTab).map(v => v._ausentes), color: '#00aaff' }
     ], 'y', true);
 
-    const sumMetric = m => filteredData.reduce((a, b) => a + (Number(b[m]) || 0), 0);
-    renderPie('chart-aplicacao-pizza', ['Agendados', 'Não Agendados'], [sumMetric('_agendados'), sumMetric('_nao_agendados')], ['#005599', '#94a3b8']);
     renderPie('chart-tabulacao-pizza', ['Presentes', 'Ausentes'], [sumMetric('_presentes'), sumMetric('_ausentes')], ['#003DA5', '#00aaff']);
 
-    // 7. Percentual de Agendamento
-    const dPct = aggregate(isAll ? keysMap.unidade : keysMap.curso, ['_alunos_aptos', '_agendados']);
+    // 6. Participação de Aptos/Agendados (Seção 4)
+    const dPct = aggregate(isAll ? keysMap.unidade : keysMap.curso, ['_total_alunos', '_alunos_aptos']);
     const resPct = Object.entries(dPct).map(([n, v]) => {
-        const p = v._alunos_aptos ? (v._agendados / v._alunos_aptos * 100) : 0;
-        const l = v._agendados;
+        const p = v._total_alunos ? (v._alunos_aptos / v._total_alunos * 100) : 0;
+        const l = v._alunos_aptos;
         return { n, p: Number(p.toFixed(1)), l };
     }).sort((a, b) => a.p - b.p);
 
     renderBar('chart-percentual-pratica', resPct.map(r => r.n), [{
-    label: '% em relação aos Alunos Aptos',
-    data: resPct.map(r => r.p),
-    alunos: resPct.map(r => r.l),
-    backgroundColor: resPct.map(r => r.p < 50 ? '#ef4444' : (r.p < 80 ? '#94a3b8' : '#003DA5'))
-}], 'y', false, true);
+        label: '% em relação ao Total de Alunos',
+        data: resPct.map(r => r.p),
+        alunos: resPct.map(r => r.l),
+        backgroundColor: resPct.map(r => r.p < 50 ? '#ef4444' : (r.p < 80 ? '#94a3b8' : '#003DA5'))
+    }], 'y', false, true);
 
-    // 8. Agendamento por Curso
-    const dConf = aggregate(
-        isAll ? keysMap.unidade : keysMap.curso,
-        ['_agendados', '_nao_agendados']
-    );
+    // 7. Aptos/Agendados por Curso (Seção 4)
+    const dConf = aggregate(keysMap.curso, ['_alunos_aptos', '_alunos_inaptos']);
+    const sortedConf = Object.entries(dConf).sort((a, b) => (b[1]._alunos_aptos + b[1]._alunos_inaptos) - (a[1]._alunos_aptos + a[1]._alunos_inaptos));
+    const confLabels = sortedConf.map(e => e[0]), isConfH = confLabels.length > 8;
+
+    const vpConf = $('chart-confirmacao-viewport'), wrConf = $('chart-confirmacao-wrapper');
+    if (vpConf && wrConf) {
+        vpConf.classList.toggle('is-scrollable', isConfH);
+        wrConf.style.height = isConfH ? (confLabels.length * 30 + 40) + 'px' : '350px';
+        if ($('chart-confirmacao-hint')) $('chart-confirmacao-hint').textContent = isConfH ? `${confLabels.length} cursos — role.` : '';
+    }
 
     renderBar(
         'chart-confirmacao',
-        Object.keys(dConf),
+        confLabels,
         [
             {
-                label: 'Agendados',
-                data: Object.values(dConf).map(v => v._agendados),
+                label: 'Aptos/Agendados',
+                data: sortedConf.map(e => e[1]._alunos_aptos),
                 color: '#003DA5'
             },
             {
-                label: 'Não Agendados',
-                data: Object.values(dConf).map(v => v._nao_agendados),
+                label: 'Inaptos/Não Agendados',
+                data: sortedConf.map(e => e[1]._alunos_inaptos),
                 color: '#94a3b8'
             }
         ],
         'y',
         true
     );
+    if (isConfH) setupScrollspy(vpConf, wrConf, $('chart-confirmacao-indicator'), $('chart-confirmacao-top'), confLabels.length, 30);
 }
 
 function renderBar(id, labels, datasets, axis = 'x', stacked = false, isPercent = false) {
@@ -331,11 +350,10 @@ function updateTable() {
         `<tr>
             <td>${d[keysMap.unidade] || '-'}</td>
             <td>${(d[keysMap.curso] || '-').slice(0, 25)}</td>
+            <td>${d[keysMap.categoria] || d['Categoria'] || '-'}</td>
             <td>${d._total_alunos}</td>
             <td>${d._alunos_aptos}</td>
             <td>${d._alunos_inaptos}</td>
-            <td>${d._agendados}</td>
-            <td>${d._nao_agendados}</td>
             <td>${d._presentes}</td>
             <td>${d._ausentes}</td>
             </tr>`).join('');

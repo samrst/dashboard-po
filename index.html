@@ -65,6 +65,7 @@
         <div class="filter-group"><label>Unidade</label><select id="filter-unidade"><option value="ALL">Todas</option></select></div>
         <div class="filter-group"><label>Curso</label><select id="filter-curso"><option value="ALL">Todos</option></select></div>
         <div class="filter-group"><label>Modalidade</label><select id="filter-modalidade"><option value="ALL">Todas</option></select></div>
+        <div class="filter-group"><label>Categoria</label><select id="filter-categoria"><option value="ALL">Todas</option></select></div>
     </section>
 
   <!-- KPIs -->
@@ -84,7 +85,7 @@
         <!-- 2 -->
         <div class="kpi-card">
             <div class="kpi-header">
-                <span class="kpi-label">Alunos Aptos</span>
+                <span class="kpi-label">Alunos Aptos/Agendados</span>
                 <span class="kpi-badge" id="kpi-homologados-pct">0%</span>
             </div>
             <div class="kpi-value" id="kpi-homologados">0</div>
@@ -94,7 +95,7 @@
         <!-- 3 -->
         <div class="kpi-card">
             <div class="kpi-header">
-                <span class="kpi-label">Alunos Inaptos</span>
+                <span class="kpi-label">Alunos Inaptos/Não Agendados</span>
                 <span class="kpi-badge" id="kpi-total-pct">0%</span>
             </div>
             <div class="kpi-value" id="kpi-total">0</div>
@@ -104,41 +105,21 @@
         <!-- 4 -->
         <div class="kpi-card">
             <div class="kpi-header">
-                <span class="kpi-label">Alunos Agendados</span>
-                <span class="kpi-badge" id="kpi-aplicadas-pct">0%</span>
-            </div>
-            <div class="kpi-value" id="kpi-aplicadas">0</div>
-            <div class="kpi-sub">Em relação aos alunos aptos</div>
-        </div>
-
-        <!-- 5 -->
-        <div class="kpi-card">
-            <div class="kpi-header">
-                <span class="kpi-label">Alunos Não Agendados</span>
-                <span class="kpi-badge" id="kpi-feitas-pct">0%</span>
-            </div>
-            <div class="kpi-value" id="kpi-feitas">0</div>
-            <div class="kpi-sub">Em relação aos alunos aptos</div>
-        </div>
-
-        <!-- 6 -->
-        <div class="kpi-card">
-            <div class="kpi-header">
                 <span class="kpi-label">Presentes</span>
                 <span class="kpi-badge" id="kpi-pendentes-pct">0%</span>
             </div>
             <div class="kpi-value" id="kpi-pendentes">0</div>
-            <div class="kpi-sub">Em relação aos agendados</div>
+            <div class="kpi-sub">Em relação aos aptos/agendados</div>
         </div>
 
-        <!-- 7 -->
+        <!-- 5 -->
         <div class="kpi-card">
             <div class="kpi-header">
                 <span class="kpi-label">Ausentes</span>
                 <span class="kpi-badge" id="kpi-confirmadas-pct">0%</span>
             </div>
             <div class="kpi-value" id="kpi-confirmadas">0</div>
-            <div class="kpi-sub">Em relação aos agendados</div>
+            <div class="kpi-sub">Em relação aos aptos/agendados</div>
         </div>
 
     </div>
@@ -146,34 +127,23 @@
 </section>
 
     <!-- Gráficos de Volume -->
-    <h2 class="section-divider">1. Volume de Alunos e Aptos</h2>
+    <h2 class="section-divider">1. Volume de Alunos e Aptos/Agendados</h2>
     <section class="charts-grid">
-        <div class="card">
+        <div class="card card-full">
             <h3 class="card-title">Alunos por Escola</h3>
             <div style="height: 350px;"><canvas id="chart-alunos-escola"></canvas></div>
         </div>
-        <div class="card">
-            <h3 class="card-title">Aptos vs Agendados por Curso</h3>
-            <div class="scrollspy-viewport" id="chart-homologacao-viewport">
-                <div class="scrollspy-inner" id="chart-homologacao-wrapper">
-                    <canvas id="chart-homologacao"></canvas>
-                </div>
-                <div class="scrollspy-indicator" id="chart-homologacao-indicator">0 itens</div>
-                <button type="button" class="scrollspy-top" id="chart-homologacao-top" title="Voltar ao topo" aria-label="Voltar ao topo">↑</button>
-            </div>
-            <p class="chart-hint" id="chart-homologacao-hint"></p>
-        </div>
     </section>
 
-    <!-- Gráficos de Aplicação -->
-    <h2 class="section-divider">2. Status de Agendamento</h2>
+    <!-- Gráficos de Aptidão/Agendamento -->
+    <h2 class="section-divider">2. Status de Aptidão/Agendamento</h2>
     <section class="charts-grid">
         <div class="card">
-            <h3 class="card-title">Agendados vs Não Agendados</h3>
+            <h3 class="card-title">Aptos/Agendados vs Inaptos/Não Agendados</h3>
             <div style="height: 350px;"><canvas id="chart-aplicacao"></canvas></div>
         </div>
         <div class="card">
-            <h3 class="card-title">Visão Geral de Agendamento</h3>
+            <h3 class="card-title">Visão Geral de Aptidão/Agendamento</h3>
             <div style="height: 350px;"><canvas id="chart-aplicacao-pizza"></canvas></div>
         </div>
     </section>
@@ -195,12 +165,12 @@
     <section class="charts-grid">
         <div class="card">
             <h3 class="card-title">
-                Participação na Avaliação Objetiva (% dos Aptos)
+                Participação de Aptos/Agendados (% do Total)
             </h3>
             <div style="height: 350px;"><canvas id="chart-percentual-pratica"></canvas></div>
         </div>
         <div class="card">
-            <h3 class="card-title">Percentual de Agendamento por Curso</h3>
+            <h3 class="card-title">Aptos/Agendados vs Inaptos/Não Agendados por Curso</h3>
             <div class="scrollspy-viewport" id="chart-confirmacao-viewport">
                 <div class="scrollspy-inner" id="chart-confirmacao-wrapper">
                     <canvas id="chart-confirmacao"></canvas>
@@ -224,11 +194,10 @@
                         <tr>
                             <th>Unidade</th>
                             <th>Curso</th>
+                            <th>Categoria</th>
                             <th>Alunos</th>
-                            <th>Aptos</th>
-                            <th>Inaptos</th>
-                            <th>Agendados</th>
-                            <th>Não Agend.</th>
+                            <th>Aptos/Agendados</th>
+                            <th>Inaptos/Não Agendados</th>
                             <th>Presentes</th>
                             <th>Ausentes</th>
                         </tr>
@@ -304,22 +273,12 @@
 
                     <label class="export-option">
                         <input type="checkbox" value="kpi-homologados" checked>
-                        Alunos Aptos
+                        Alunos Aptos/Agendados
                     </label>
 
                     <label class="export-option">
                         <input type="checkbox" value="kpi-total" checked>
-                        Alunos Inaptos
-                    </label>
-
-                    <label class="export-option">
-                        <input type="checkbox" value="kpi-aplicadas" checked>
-                        Alunos Agendados
-                    </label>
-
-                    <label class="export-option">
-                        <input type="checkbox" value="kpi-feitas" checked>
-                        Alunos Não Agendados
+                        Alunos Inaptos/Não Agendados
                     </label>
 
                     <label class="export-option">
@@ -355,17 +314,9 @@
                     <label class="export-option">
                         <input
                             type="checkbox"
-                            value="chart-homologacao">
-
-                        Aptos x Agendados
-                    </label>
-
-                    <label class="export-option">
-                        <input
-                            type="checkbox"
                             value="chart-aplicacao">
 
-                        Agendamentos
+                        Aptos/Agendados vs Inaptos/Não Agendados
                     </label>
 
                     <label class="export-option">
@@ -373,7 +324,7 @@
                             type="checkbox"
                             value="chart-aplicacao-pizza">
 
-                        Visão Geral de Agendamento
+                        Visão Geral de Aptidão/Agendamento
                     </label>
 
                     <label class="export-option">
@@ -381,7 +332,7 @@
                             type="checkbox"
                             value="chart-tabulacao">
 
-                        Presença
+                        Presentes vs Ausentes por Curso
                     </label>
 
                     <label class="export-option">
@@ -397,7 +348,7 @@
                             type="checkbox"
                             value="chart-percentual-pratica">
 
-                        Participação Objetiva
+                        Participação de Aptos/Agendados
                     </label>
 
                     <label class="export-option">
@@ -405,7 +356,7 @@
                             type="checkbox"
                             value="chart-confirmacao">
 
-                        Agendamento por Curso
+                        Aptos/Agendados por Curso
                     </label>
 
                 </div>

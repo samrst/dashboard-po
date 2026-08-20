@@ -75,7 +75,8 @@ const UTILS = {
         return {
             unidade: getFilterValue("filter-unidade"),
             curso: getFilterValue("filter-curso"),
-            modalidade: getFilterValue("filter-modalidade")
+            modalidade: getFilterValue("filter-modalidade"),
+            categoria: getFilterValue("filter-categoria")
         };
     },
 
@@ -304,6 +305,11 @@ const FILTROS = {
         doc.setFont("Helvetica", "normal");
         doc.text(filtros.modalidade, margin + 25, filterY);
 
+        doc.setFont("Helvetica", "bold");
+        doc.text("Categoria:", margin + 70, filterY);
+        doc.setFont("Helvetica", "normal");
+        doc.text(filtros.categoria, margin + 85, filterY);
+
         return y + boxHeight + 8;
     },
 
@@ -314,7 +320,8 @@ const FILTROS = {
         children.push(new Paragraph({ text: "Filtros Aplicados", spacing: { before: 200, after: 100 } }));
         children.push(new Paragraph({ children: [new TextRun({ text: `Unidade: `, bold: true }), new TextRun({ text: filtros.unidade })] }));
         children.push(new Paragraph({ children: [new TextRun({ text: `Curso: `, bold: true }), new TextRun({ text: filtros.curso })] }));
-        children.push(new Paragraph({ children: [new TextRun({ text: `Modalidade: `, bold: true }), new TextRun({ text: filtros.modalidade })], spacing: { after: 200 } }));
+        children.push(new Paragraph({ children: [new TextRun({ text: `Modalidade: `, bold: true }), new TextRun({ text: filtros.modalidade })] }));
+        children.push(new Paragraph({ children: [new TextRun({ text: `Categoria: `, bold: true }), new TextRun({ text: filtros.categoria })], spacing: { after: 200 } }));
     }
 };
 
@@ -359,12 +366,10 @@ const KPIS = {
     getAll() {
         return [
             { id: "kpi-objetivo", titulo: "Total de Alunos", valor: UTILS.getElementValue("kpi-objetivo"), percentual: "", descricao: "Avaliação Objetiva" },
-            { id: "kpi-homologados", titulo: "Alunos Aptos", valor: UTILS.getElementValue("kpi-homologados"), percentual: UTILS.getElementValue("kpi-homologados-pct"), descricao: "dos Alunos" },
-            { id: "kpi-total", titulo: "Alunos Inaptos", valor: UTILS.getElementValue("kpi-total"), percentual: UTILS.getElementValue("kpi-total-pct"), descricao: "dos Alunos" },
-            { id: "kpi-aplicadas", titulo: "Alunos Agendados", valor: UTILS.getElementValue("kpi-aplicadas"), percentual: UTILS.getElementValue("kpi-aplicadas-pct"), descricao: "dos Aptos" },
-            { id: "kpi-feitas", titulo: "Alunos Não Agendados", valor: UTILS.getElementValue("kpi-feitas"), percentual: UTILS.getElementValue("kpi-feitas-pct"), descricao: "dos Aptos" },
-            { id: "kpi-pendentes", titulo: "Presentes", valor: UTILS.getElementValue("kpi-pendentes"), percentual: UTILS.getElementValue("kpi-pendentes-pct"), descricao: "dos Agendados" },
-            { id: "kpi-confirmadas", titulo: "Ausentes", valor: UTILS.getElementValue("kpi-confirmadas"), percentual: UTILS.getElementValue("kpi-confirmadas-pct"), descricao: "dos Agendados" }
+            { id: "kpi-homologados", titulo: "Alunos Aptos/Agendados", valor: UTILS.getElementValue("kpi-homologados"), percentual: UTILS.getElementValue("kpi-homologados-pct"), descricao: "dos Alunos" },
+            { id: "kpi-total", titulo: "Alunos Inaptos/Não Agendados", valor: UTILS.getElementValue("kpi-total"), percentual: UTILS.getElementValue("kpi-total-pct"), descricao: "dos Alunos" },
+            { id: "kpi-pendentes", titulo: "Presentes", valor: UTILS.getElementValue("kpi-pendentes"), percentual: UTILS.getElementValue("kpi-pendentes-pct"), descricao: "dos Aptos/Agendados" },
+            { id: "kpi-confirmadas", titulo: "Ausentes", valor: UTILS.getElementValue("kpi-confirmadas"), percentual: UTILS.getElementValue("kpi-confirmadas-pct"), descricao: "dos Aptos/Agendados" }
         ];
     },
 
@@ -478,13 +483,12 @@ const GRAFICOS = {
     getAll() {
         return [
             { id: "chart-alunos-escola", titulo: "Alunos por Escola" },
-            { id: "chart-homologacao", titulo: "Aptos vs Agendados por Curso" },
-            { id: "chart-aplicacao", titulo: "Agendados vs Não Agendados" },
-            { id: "chart-aplicacao-pizza", titulo: "Visão Geral de Agendamento" },
+            { id: "chart-aplicacao", titulo: "Aptos/Agendados vs Inaptos/Não Agendados" },
+            { id: "chart-aplicacao-pizza", titulo: "Visão Geral de Aptidão/Agendamento" },
             { id: "chart-tabulacao", titulo: "Presentes vs Ausentes por Curso" },
             { id: "chart-tabulacao-pizza", titulo: "Eficiência de Presença" },
-            { id: "chart-percentual-pratica", titulo: "Participação na Avaliação Objetiva" },
-            { id: "chart-confirmacao", titulo: "Agendamento por Curso" }
+            { id: "chart-percentual-pratica", titulo: "Participação de Aptos/Agendados" },
+            { id: "chart-confirmacao", titulo: "Aptos/Agendados por Curso" }
         ];
     },
 
